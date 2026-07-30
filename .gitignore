@@ -2,4 +2,5 @@
 __pycache__/
 *.pyc
 history.json
+snapshot.log
 .venv/

@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TRACKED_USERNAMES = ["wns", "wukegh"]
+
 
 class MissingApiKeyError(Exception):
     pass

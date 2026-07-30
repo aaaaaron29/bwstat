@@ -58,3 +58,20 @@ def latest_for(username: str) -> BedwarsStats | None:
         if entry["stats"]["username"].lower() == username.lower():
             return _stats_from_dict(entry["stats"])
     return None
+
+
+def latest_entry(username: str) -> tuple[datetime, BedwarsStats] | None:
+    for entry in reversed(_load()):
+        if entry["stats"]["username"].lower() == username.lower():
+            return datetime.fromisoformat(entry["timestamp"]), _stats_from_dict(entry["stats"])
+    return None
+
+
+def snapshot_before(username: str, cutoff: datetime) -> tuple[datetime, BedwarsStats] | None:
+    for entry in reversed(_load()):
+        if entry["stats"]["username"].lower() != username.lower():
+            continue
+        timestamp = datetime.fromisoformat(entry["timestamp"])
+        if timestamp <= cutoff:
+            return timestamp, _stats_from_dict(entry["stats"])
+    return None

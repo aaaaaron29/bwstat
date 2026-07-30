@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QMainWindow,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -15,6 +16,7 @@ from api.mojang_client import PlayerNotFoundError, get_uuid
 from models.bedwars_stats import BedwarsStats, NoBedwarsStatsError
 from storage import history
 from ui.stats_view import StatsView
+from ui.tracked_view import TrackedView
 
 WINDOW_STYLE = """
 QMainWindow, QWidget {
@@ -48,6 +50,22 @@ QListWidget {
 QLabel#status {
     color: #f87171;
     font-size: 12px;
+}
+QTabWidget::pane {
+    border: 1px solid #2c303a;
+    border-radius: 6px;
+}
+QTabBar::tab {
+    background-color: #1c1f26;
+    color: #9aa0ac;
+    padding: 8px 16px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+QTabBar::tab:selected {
+    background-color: #23262e;
+    color: #f2f3f5;
+    font-weight: 600;
 }
 """
 
@@ -126,9 +144,13 @@ class MainWindow(QMainWindow):
         root_layout.addWidget(self.history_list)
         root_layout.addLayout(content_layout, stretch=1)
 
-        container = QWidget()
-        container.setLayout(root_layout)
-        self.setCentralWidget(container)
+        search_tab = QWidget()
+        search_tab.setLayout(root_layout)
+
+        tabs = QTabWidget()
+        tabs.addTab(search_tab, "Search")
+        tabs.addTab(TrackedView(), "Tracked")
+        self.setCentralWidget(tabs)
 
     def _refresh_history_list(self) -> None:
         self.history_list.clear()
