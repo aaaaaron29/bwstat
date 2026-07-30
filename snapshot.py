@@ -3,9 +3,9 @@ from pathlib import Path
 
 from api.hypixel_client import get_player
 from api.mojang_client import get_uuid
-from config import TRACKED_USERNAMES, get_api_key
+from config import get_api_key
 from models.bedwars_stats import BedwarsStats
-from storage import history
+from storage import history, tracked_accounts
 
 LOG_PATH = Path(__file__).resolve().parent / "snapshot.log"
 
@@ -16,15 +16,19 @@ logging.basicConfig(
 )
 
 
-def snapshot_all() -> None:
+def snapshot_one(username: str) -> None:
     api_key = get_api_key()
-    for username in TRACKED_USERNAMES:
+    uuid = get_uuid(username)
+    player = get_player(uuid, api_key)
+    stats = BedwarsStats.from_api_json(player, username)
+    history.add_entry(stats)
+
+
+def snapshot_all() -> None:
+    for username in tracked_accounts.load():
         try:
-            uuid = get_uuid(username)
-            player = get_player(uuid, api_key)
-            stats = BedwarsStats.from_api_json(player, username)
-            history.add_entry(stats)
-            logging.info("Snapshotted %s (level %d)", username, stats.level)
+            snapshot_one(username)
+            logging.info("Snapshotted %s", username)
         except Exception:
             logging.exception("Failed to snapshot %s", username)
 

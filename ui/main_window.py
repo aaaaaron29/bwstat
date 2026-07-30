@@ -1,4 +1,5 @@
 from PySide6.QtCore import QThread, Signal
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -120,9 +121,13 @@ class MainWindow(QMainWindow):
         self.search_button = QPushButton("Search")
         self.search_button.clicked.connect(self._on_search)
 
+        self.paste_button = QPushButton("Paste")
+        self.paste_button.clicked.connect(self._on_paste)
+
         search_row = QHBoxLayout()
         search_row.addWidget(self.search_box)
         search_row.addWidget(self.search_button)
+        search_row.addWidget(self.paste_button)
 
         self.status_label = QLabel("")
         self.status_label.setObjectName("status")
@@ -161,6 +166,11 @@ class MainWindow(QMainWindow):
         if cached:
             self.status_label.setText("")
             self.stats_view.show_stats(cached)
+
+    def _on_paste(self) -> None:
+        clipboard_text = QGuiApplication.clipboard().text().strip()
+        if clipboard_text:
+            self.search_box.setText(clipboard_text)
 
     def _on_search(self) -> None:
         username = self.search_box.text().strip()

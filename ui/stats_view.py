@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from models.bedwars_stats import BedwarsStats, ModeStats
+from ui.summary_card import SummaryCard
 
 ACCENT = "#3b82f6"
 OVERALL_ROW_BG = "#20232b"
@@ -164,12 +165,22 @@ class StatsView(QWidget):
         self.header_layout = QHBoxLayout()
         layout.addLayout(self.header_layout)
 
+        self.summary_layout = QVBoxLayout()
+        layout.addLayout(self.summary_layout)
+
         self.table = ModeTable()
         layout.addWidget(self.table)
 
     def _clear_header(self) -> None:
         while self.header_layout.count():
             item = self.header_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+    def _clear_summary(self) -> None:
+        while self.summary_layout.count():
+            item = self.summary_layout.takeAt(0)
             widget = item.widget()
             if widget:
                 widget.deleteLater()
@@ -186,8 +197,12 @@ class StatsView(QWidget):
         )
         self.header_layout.addWidget(StatTile("Tokens", _fmt(stats.coins)))
 
+        self._clear_summary()
+        self.summary_layout.addWidget(SummaryCard(stats.overall))
+
         self.table.set_rows(stats.modes, stats.overall)
 
     def clear(self) -> None:
         self._clear_header()
+        self._clear_summary()
         self.table.setRowCount(0)

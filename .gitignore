@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 history.json
 snapshot.log
+tracked_accounts.json
 .venv/

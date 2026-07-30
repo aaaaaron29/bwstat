@@ -32,6 +32,7 @@ def _gained_mode(current: ModeStats, baseline: ModeStats) -> ModeStats:
         wins=current.wins - baseline.wins,
         losses=current.losses - baseline.losses,
         beds_broken=current.beds_broken - baseline.beds_broken,
+        beds_lost=current.beds_lost - baseline.beds_lost,
     )
 
 
@@ -42,6 +43,8 @@ class PeriodStats:
     baseline_date: datetime
     current_date: datetime
     partial: bool
+    current_level: int
+    level_gained: int
     overall: ModeStats
     modes: list[ModeStats]
 
@@ -79,6 +82,8 @@ def compute_period(username: str, period: str) -> PeriodStats | None:
         baseline_date=baseline_date,
         current_date=current_date,
         partial=partial,
+        current_level=current_stats.level,
+        level_gained=current_stats.level - baseline_stats.level,
         overall=_gained_mode(current_stats.overall, baseline_stats.overall),
         modes=[
             _gained_mode(c, b)

@@ -21,6 +21,7 @@ class ModeStats:
     wins: int
     losses: int
     beds_broken: int
+    beds_lost: int = 0  # defaulted: older history.json entries predate this field
 
     @property
     def kdr(self) -> float:
@@ -33,6 +34,10 @@ class ModeStats:
     @property
     def wlr(self) -> float:
         return _ratio(self.wins, self.losses)
+
+    @property
+    def bblr(self) -> float:
+        return _ratio(self.beds_broken, self.beds_lost)
 
 
 _MODE_PREFIXES = {
@@ -55,6 +60,7 @@ def _mode_from_json(stats: dict, label: str, prefix: str | None) -> ModeStats:
         wins=stats.get(f"{p}wins_bedwars", 0),
         losses=stats.get(f"{p}losses_bedwars", 0),
         beds_broken=stats.get(f"{p}beds_broken_bedwars", 0),
+        beds_lost=stats.get(f"{p}beds_lost_bedwars", 0),
     )
 
 
