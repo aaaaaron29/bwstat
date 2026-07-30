@@ -11,8 +11,8 @@ from PySide6.QtWidgets import (
 
 from config import TRACKED_USERNAMES
 from storage import history
-from tracking import Delta, compute_delta
-from ui.stats_view import StatTile
+from tracking import PERIOD_LABELS, PeriodStats, compute_period
+from ui.stats_view import ModeTable
 
 CARD_STYLE = """
 QFrame#card {
@@ -52,13 +52,23 @@ QPushButton#refresh:hover {
 }
 """
 
-def _delta_tiles(delta: Delta) -> QHBoxLayout:
-    row = QHBoxLayout()
-    row.addWidget(StatTile("Wins", f"+{delta.wins_gained:,}"))
-    row.addWidget(StatTile("Final Kills", f"+{delta.final_kills_gained:,}"))
-    row.addWidget(StatTile("WLR", f"{delta.wlr_period:.2f}"))
-    row.addWidget(StatTile("FKDR", f"{delta.fkdr_period:.2f}"))
-    return row
+PERIODS = ["today", "week", "month"]
+
+
+def _period_section(period: PeriodStats) -> QVBoxLayout:
+    section = QVBoxLayout()
+
+    label_text = period.label.upper()
+    if period.partial:
+        label_text += f" (since {period.baseline_date.astimezone().strftime('%b %d')} — tracking just started)"
+    label = QLabel(label_text)
+    label.setObjectName("periodLabel")
+    section.addWidget(label)
+
+    table = ModeTable()
+    table.set_rows(period.modes, period.overall)
+    section.addWidget(table)
+    return section
 
 
 class RefreshWorker(QThread):
@@ -131,24 +141,22 @@ class TrackedView(QWidget):
         header.setObjectName("cardHeader")
         layout.addWidget(header)
 
-        meta = QLabel(f"Last updated: {last_updated.strftime('%Y-%m-%d %H:%M UTC')}")
+        meta = QLabel(f"Last updated: {last_updated.astimezone().strftime('%Y-%m-%d %H:%M')}")
         meta.setObjectName("cardMeta")
         layout.addWidget(meta)
 
-        for label, days in (("This Week", 7), ("This Month", 30)):
-            period_label = QLabel(label.upper())
-            period_label.setObjectName("periodLabel")
-            layout.addWidget(period_label)
+        for period_key in PERIODS:
+            period = compute_period(username, period_key)
+            if period is None:
+                label = QLabel(PERIOD_LABELS[period_key].upper())
+                label.setObjectName("periodLabel")
+                layout.addWidget(label)
 
-            delta = compute_delta(username, days)
-            if delta is None:
-                placeholder = QLabel(
-                    f"Not enough history yet — need at least {days} days of daily snapshots."
-                )
+                placeholder = QLabel("Not enough history yet.")
                 placeholder.setObjectName("placeholder")
                 layout.addWidget(placeholder)
             else:
-                layout.addLayout(_delta_tiles(delta))
+                layout.addLayout(_period_section(period))
 
         return card
 

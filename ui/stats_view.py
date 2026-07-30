@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from models.bedwars_stats import BedwarsStats
+from models.bedwars_stats import BedwarsStats, ModeStats
 
 ACCENT = "#3b82f6"
 OVERALL_ROW_BG = "#20232b"
@@ -99,51 +99,31 @@ def _ratio(value: float) -> str:
     return f"{value:.2f}"
 
 
-class StatsView(QWidget):
+class ModeTable(QTableWidget):
+    """Renders a Solo/Doubles/3v3v3v3/4v4v4v4/4v4/Overall breakdown table.
+
+    Used both for lifetime totals (Search tab) and for period gains
+    (Tracked tab) — both are ModeStats-shaped, so the same rendering works.
+    """
+
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self.setStyleSheet(TABLE_STYLE)
+        self.setColumnCount(len(COLUMNS))
+        self.setHorizontalHeaderLabels(COLUMNS)
+        self.verticalHeader().setVisible(False)
+        self.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.setSelectionMode(QTableWidget.NoSelection)
+        self.setFocusPolicy(Qt.NoFocus)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.setMinimumHeight(260)
 
-        self.header_layout = QHBoxLayout()
-        layout.addLayout(self.header_layout)
-
-        self.table = QTableWidget()
-        self.table.setStyleSheet(TABLE_STYLE)
-        self.table.setColumnCount(len(COLUMNS))
-        self.table.setHorizontalHeaderLabels(COLUMNS)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.table.setSelectionMode(QTableWidget.NoSelection)
-        self.table.setFocusPolicy(Qt.NoFocus)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setMinimumHeight(260)
-        layout.addWidget(self.table)
-
-    def _clear_header(self) -> None:
-        while self.header_layout.count():
-            item = self.header_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
-
-    def show_stats(self, stats: BedwarsStats) -> None:
-        self._clear_header()
-        self.header_layout.addWidget(StatTile("Player", stats.username))
-        self.header_layout.addWidget(StatTile("Level", str(stats.level)))
-        self.header_layout.addWidget(
-            StatTile(
-                "Winstreak",
-                str(stats.winstreak) if stats.winstreak is not None else "Hidden",
-            )
-        )
-        self.header_layout.addWidget(StatTile("Tokens", _fmt(stats.coins)))
-
-        rows = list(stats.modes) + [stats.overall]
-        self.table.setRowCount(len(rows))
+    def set_rows(self, modes: list[ModeStats], overall: ModeStats) -> None:
+        rows = list(modes) + [overall]
+        self.setRowCount(len(rows))
 
         for r, mode in enumerate(rows):
-            is_overall = mode is stats.overall
+            is_overall = mode is overall
             values = [
                 mode.label if not is_overall else "Overall",
                 _fmt(mode.kills),
@@ -172,7 +152,41 @@ class StatsView(QWidget):
                 if is_overall:
                     item.setBackground(QColor(OVERALL_ROW_BG))
 
-                self.table.setItem(r, c, item)
+                self.setItem(r, c, item)
+
+
+class StatsView(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.header_layout = QHBoxLayout()
+        layout.addLayout(self.header_layout)
+
+        self.table = ModeTable()
+        layout.addWidget(self.table)
+
+    def _clear_header(self) -> None:
+        while self.header_layout.count():
+            item = self.header_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+    def show_stats(self, stats: BedwarsStats) -> None:
+        self._clear_header()
+        self.header_layout.addWidget(StatTile("Player", stats.username))
+        self.header_layout.addWidget(StatTile("Level", str(stats.level)))
+        self.header_layout.addWidget(
+            StatTile(
+                "Winstreak",
+                str(stats.winstreak) if stats.winstreak is not None else "Hidden",
+            )
+        )
+        self.header_layout.addWidget(StatTile("Tokens", _fmt(stats.coins)))
+
+        self.table.set_rows(stats.modes, stats.overall)
 
     def clear(self) -> None:
         self._clear_header()

@@ -1,42 +1,71 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
+from models.bedwars_stats import ModeStats
 from storage import history
 
+PERIOD_LABELS = {
+    "today": "Today",
+    "week": "This Week",
+    "month": "This Month",
+}
 
-def _ratio(numerator: int, denominator: int) -> float:
-    return numerator / denominator if denominator else float(numerator)
+
+def _period_start(period: str, local_now: datetime) -> datetime:
+    midnight = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if period == "today":
+        return midnight
+    if period == "week":
+        return midnight - timedelta(days=local_now.weekday())
+    if period == "month":
+        return midnight.replace(day=1)
+    raise ValueError(f"Unknown period: {period}")
+
+
+def _gained_mode(current: ModeStats, baseline: ModeStats) -> ModeStats:
+    return ModeStats(
+        label=current.label,
+        kills=current.kills - baseline.kills,
+        deaths=current.deaths - baseline.deaths,
+        final_kills=current.final_kills - baseline.final_kills,
+        final_deaths=current.final_deaths - baseline.final_deaths,
+        wins=current.wins - baseline.wins,
+        losses=current.losses - baseline.losses,
+        beds_broken=current.beds_broken - baseline.beds_broken,
+    )
 
 
 @dataclass(frozen=True)
-class Delta:
+class PeriodStats:
     username: str
-    days: int
-    current_level: int
+    period: str
     baseline_date: datetime
     current_date: datetime
-    wins_gained: int
-    losses_gained: int
-    final_kills_gained: int
-    final_deaths_gained: int
+    partial: bool
+    overall: ModeStats
+    modes: list[ModeStats]
 
     @property
-    def wlr_period(self) -> float:
-        return _ratio(self.wins_gained, self.losses_gained)
-
-    @property
-    def fkdr_period(self) -> float:
-        return _ratio(self.final_kills_gained, self.final_deaths_gained)
+    def label(self) -> str:
+        return PERIOD_LABELS[self.period]
 
 
-def compute_delta(username: str, days: int) -> Delta | None:
+def compute_period(username: str, period: str) -> PeriodStats | None:
     current_entry = history.latest_entry(username)
     if current_entry is None:
         return None
     current_date, current_stats = current_entry
 
-    cutoff = current_date - timedelta(days=days)
-    baseline_entry = history.snapshot_before(username, cutoff)
+    local_now = current_date.astimezone()
+    start_local = _period_start(period, local_now)
+    start_utc = start_local.astimezone(timezone.utc)
+
+    baseline_entry = history.snapshot_before(username, start_utc)
+    partial = False
+    if baseline_entry is None:
+        baseline_entry = history.earliest_entry(username)
+        partial = True
+
     if baseline_entry is None:
         return None
     baseline_date, baseline_stats = baseline_entry
@@ -44,14 +73,15 @@ def compute_delta(username: str, days: int) -> Delta | None:
     if baseline_date == current_date:
         return None
 
-    return Delta(
+    return PeriodStats(
         username=username,
-        days=days,
-        current_level=current_stats.level,
+        period=period,
         baseline_date=baseline_date,
         current_date=current_date,
-        wins_gained=current_stats.overall.wins - baseline_stats.overall.wins,
-        losses_gained=current_stats.overall.losses - baseline_stats.overall.losses,
-        final_kills_gained=current_stats.overall.final_kills - baseline_stats.overall.final_kills,
-        final_deaths_gained=current_stats.overall.final_deaths - baseline_stats.overall.final_deaths,
+        partial=partial,
+        overall=_gained_mode(current_stats.overall, baseline_stats.overall),
+        modes=[
+            _gained_mode(c, b)
+            for c, b in zip(current_stats.modes, baseline_stats.modes)
+        ],
     )

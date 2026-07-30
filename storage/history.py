@@ -75,3 +75,10 @@ def snapshot_before(username: str, cutoff: datetime) -> tuple[datetime, BedwarsS
         if timestamp <= cutoff:
             return timestamp, _stats_from_dict(entry["stats"])
     return None
+
+
+def earliest_entry(username: str) -> tuple[datetime, BedwarsStats] | None:
+    for entry in _load():
+        if entry["stats"]["username"].lower() == username.lower():
+            return datetime.fromisoformat(entry["timestamp"]), _stats_from_dict(entry["stats"])
+    return None
