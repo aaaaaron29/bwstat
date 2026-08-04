@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -94,6 +96,44 @@ class SettingsView(QWidget):
         self.status_label = QLabel("")
         self.status_label.setStyleSheet("color: #9aa0ac; font-size: 12px;")
         layout.addWidget(self.status_label)
+
+        log_heading = QLabel("Lunar Client Log Path")
+        log_heading.setObjectName("heading")
+        layout.addWidget(log_heading)
+
+        log_hint = QLabel(
+            "Watched for /who and /party list to auto-lookup lobby stats on the Lobby tab."
+        )
+        log_hint.setObjectName("hint")
+        layout.addWidget(log_hint)
+
+        self.log_path_input = QLineEdit(config.get_log_path())
+        layout.addWidget(self.log_path_input)
+
+        self.log_save_button = QPushButton("Save Log Path")
+        self.log_save_button.clicked.connect(self._on_save_log_path)
+        layout.addWidget(self.log_save_button)
+
+        self.log_status_label = QLabel("")
+        self.log_status_label.setStyleSheet("color: #9aa0ac; font-size: 12px;")
+        layout.addWidget(self.log_status_label)
+
+    def _on_save_log_path(self) -> None:
+        new_path = self.log_path_input.text().strip()
+        if not new_path:
+            return
+
+        config.set_log_path(new_path)
+        if Path(new_path).exists():
+            self.log_status_label.setStyleSheet("color: #4ade80; font-size: 12px;")
+            self.log_status_label.setText(
+                "Saved — file found. Restart the app for the Lobby tab to use it."
+            )
+        else:
+            self.log_status_label.setStyleSheet("color: #fbbf24; font-size: 12px;")
+            self.log_status_label.setText(
+                "Saved, but that file doesn't exist yet (fine if Minecraft isn't running)."
+            )
 
     def _on_toggle_show(self, checked: bool) -> None:
         self.key_input.setEchoMode(QLineEdit.Normal if checked else QLineEdit.Password)

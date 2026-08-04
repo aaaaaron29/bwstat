@@ -9,6 +9,8 @@ load_dotenv(ENV_PATH)
 
 TRACKED_USERNAMES = ["wns", "wukegh"]
 
+DEFAULT_LOG_PATH = r"C:\Users\aaron\.lunarclient\profiles\1.8\logs\latest.log"
+
 
 class MissingApiKeyError(Exception):
     pass
@@ -29,3 +31,14 @@ def set_api_key(new_key: str) -> None:
         ENV_PATH.touch()
     set_key(ENV_PATH, "HYPIXEL_API_KEY", new_key)
     os.environ["HYPIXEL_API_KEY"] = new_key
+
+
+def get_log_path() -> str:
+    return os.getenv("LUNAR_LOG_PATH", DEFAULT_LOG_PATH)
+
+
+def set_log_path(new_path: str) -> None:
+    if not ENV_PATH.exists():
+        ENV_PATH.touch()
+    set_key(ENV_PATH, "LUNAR_LOG_PATH", new_path)
+    os.environ["LUNAR_LOG_PATH"] = new_path

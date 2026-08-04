@@ -16,6 +16,7 @@ from api.hypixel_client import HypixelApiError, InvalidApiKeyError, RateLimitedE
 from api.mojang_client import PlayerNotFoundError, get_uuid
 from models.bedwars_stats import BedwarsStats, NoBedwarsStatsError
 from storage import history
+from ui.lobby_view import LobbyView
 from ui.settings_view import SettingsView
 from ui.stats_view import StatsView
 from ui.tracked_view import TrackedView
@@ -156,14 +157,21 @@ class MainWindow(QMainWindow):
         settings_view = SettingsView()
         settings_view.key_updated.connect(self._on_key_updated)
 
+        self.lobby_view = LobbyView()
+
         tabs = QTabWidget()
         tabs.addTab(search_tab, "Search")
         tabs.addTab(TrackedView(), "Tracked")
+        tabs.addTab(self.lobby_view, "Lobby")
         tabs.addTab(settings_view, "Settings")
         self.setCentralWidget(tabs)
 
     def _on_key_updated(self, new_key: str) -> None:
         self._api_key = new_key
+
+    def closeEvent(self, event) -> None:
+        self.lobby_view.shutdown()
+        super().closeEvent(event)
 
     def _refresh_history_list(self) -> None:
         self.history_list.clear()
