@@ -8,6 +8,7 @@ PERIOD_LABELS = {
     "today": "Today",
     "week": "This Week",
     "month": "This Month",
+    "year": "This Year",
 }
 
 
@@ -19,6 +20,8 @@ def _period_start(period: str, local_now: datetime) -> datetime:
         return midnight - timedelta(days=local_now.weekday())
     if period == "month":
         return midnight.replace(day=1)
+    if period == "year":
+        return midnight.replace(month=1, day=1)
     raise ValueError(f"Unknown period: {period}")
 
 

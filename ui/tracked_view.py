@@ -93,7 +93,7 @@ QPushButton#removeButton:hover {
 }
 """
 
-PERIODS = ["today", "week", "month"]
+PERIODS = ["today", "week", "month", "year"]
 
 
 def _clear_layout(layout: QLayout) -> None:

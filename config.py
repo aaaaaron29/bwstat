@@ -1,8 +1,11 @@
 import os
+from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
-load_dotenv()
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+
+load_dotenv(ENV_PATH)
 
 TRACKED_USERNAMES = ["wns", "wukegh"]
 
@@ -19,3 +22,10 @@ def get_api_key() -> str:
             "from developer.hypixel.net."
         )
     return api_key
+
+
+def set_api_key(new_key: str) -> None:
+    if not ENV_PATH.exists():
+        ENV_PATH.touch()
+    set_key(ENV_PATH, "HYPIXEL_API_KEY", new_key)
+    os.environ["HYPIXEL_API_KEY"] = new_key
